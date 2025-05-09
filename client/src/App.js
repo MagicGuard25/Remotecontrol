@@ -3,9 +3,6 @@ import { Box, Button, IconButton, Dialog, TextField, Typography, Paper, ToggleBu
 import PersonIcon from '@mui/icons-material/Person';
 import DownloadIcon from '@mui/icons-material/Download';
 import AppsIcon from '@mui/icons-material/Apps';
-import axios from 'axios';
-
-const API_BASE = 'http://localhost:4000/api';
 
 const translations = {
   he: {
@@ -46,52 +43,62 @@ const translations = {
   }
 };
 
+const STORAGE_KEY = 'remotecontrol_config';
+
 function App() {
   const [lang, setLang] = useState('he');
   const [config, setConfig] = useState({ hebrewYoutubeUrl: '', englishYoutubeUrl: '', apkUrl: '', bydUrl: '' });
   const [adminOpen, setAdminOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
-  const [token, setToken] = useState('');
   const [form, setForm] = useState(config);
   const [login, setLogin] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
 
   useEffect(() => {
-    axios.get(`${API_BASE}/config`).then(r => {
-      setConfig(r.data);
-      setForm(r.data);
-    });
+    const savedConfig = localStorage.getItem(STORAGE_KEY);
+    if (savedConfig) {
+      try {
+        const parsedConfig = JSON.parse(savedConfig);
+        setConfig(parsedConfig);
+        setForm(parsedConfig);
+      } catch (e) {
+        console.error('Failed to parse config:', e);
+      }
+    }
   }, []);
 
   const handleAdminClick = () => {
-    if (token) setAdminOpen(true);
-    else setLoginOpen(true);
+    if (login.username === 'admin' && login.password === '123456') {
+      setAdminOpen(true);
+      setLoginOpen(false);
+    } else {
+      setLoginOpen(true);
+    }
   };
 
-  const handleLogin = async () => {
-    try {
-      const res = await axios.post(`${API_BASE}/login`, login);
-      setToken(res.data.token);
+  const handleLogin = () => {
+    if (login.username === 'admin' && login.password === '123456') {
       setLoginOpen(false);
       setAdminOpen(true);
       setError('');
-    } catch {
+    } else {
       setError(translations[lang].error);
     }
   };
 
-  const handleSave = async () => {
-    await axios.post(`${API_BASE}/config`, form, { headers: { Authorization: `Bearer ${token}` } });
-    setConfig(form);
-    setAdminOpen(false);
+  const handleSave = () => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(form));
+      setConfig(form);
+      setAdminOpen(false);
+    } catch (e) {
+      console.error('Failed to save config:', e);
+    }
   };
 
   const handleLangChange = (event, newLang) => {
     if (newLang) setLang(newLang);
   };
-
-  // בחר את הסרטון לפי שפה
-  const youtubeUrl = lang === 'he' ? config.hebrewYoutubeUrl : config.englishYoutubeUrl;
 
   return (
     <Box dir={lang === 'he' ? 'rtl' : 'ltr'} sx={{
@@ -101,7 +108,6 @@ function App() {
       background: 'linear-gradient(135deg, #e3f0ff 0%, #fafcff 100%)',
       boxSizing: 'border-box'
     }}>
-      {/* כפתור החלפת שפה */}
       <Box sx={{ position: 'absolute', top: 16, right: 16, zIndex: 2 }}>
         <ToggleButtonGroup
           value={lang}
@@ -123,12 +129,12 @@ function App() {
           <Typography variant="h3" fontWeight={700} gutterBottom color="primary.main" sx={{ mb: 3 }}>
             {translations[lang].title}
           </Typography>
-          {youtubeUrl && (
+          {config.hebrewYoutubeUrl && (
             <Box sx={{ my: 2, borderRadius: 3, overflow: 'hidden', boxShadow: 2 }}>
               <iframe
                 width="100%"
                 height="315"
-                src={youtubeUrl.replace('watch?v=', 'embed/')}
+                src={(lang === 'he' ? config.hebrewYoutubeUrl : config.englishYoutubeUrl).replace('watch?v=', 'embed/')}
                 title="YouTube video"
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -165,7 +171,6 @@ function App() {
           </Box>
         </Paper>
       </Box>
-      {/* דיאלוג התחברות */}
       <Dialog open={loginOpen} onClose={() => setLoginOpen(false)}>
         <Paper sx={{ p: 3 }}>
           <Typography variant="h6">{translations[lang].adminLogin}</Typography>
@@ -190,7 +195,6 @@ function App() {
           </Button>
         </Paper>
       </Dialog>
-      {/* דיאלוג ניהול */}
       <Dialog open={adminOpen} onClose={() => setAdminOpen(false)}>
         <Paper sx={{ p: 3, minWidth: 350 }}>
           <Typography variant="h6">{translations[lang].adminPanel}</Typography>
