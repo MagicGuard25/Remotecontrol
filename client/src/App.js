@@ -45,9 +45,16 @@ const translations = {
 
 const STORAGE_KEY = 'remotecontrol_config';
 
+const defaultConfig = {
+  hebrewYoutubeUrl: 'https://www.youtube.com/embed/0usUUlSCoAQ',
+  englishYoutubeUrl: 'https://www.youtube.com/embed/0usUUlSCoAQ',
+  apkUrl: 'https://play.google.com/store/apps/details?id=com.splashtop.remote.pad.v2',
+  bydUrl: 'https://play.google.com/store/apps/details?id=com.byd.operatorapp'
+};
+
 function App() {
   const [lang, setLang] = useState('he');
-  const [config, setConfig] = useState({ hebrewYoutubeUrl: '', englishYoutubeUrl: '', apkUrl: '', bydUrl: '' });
+  const [config, setConfig] = useState(defaultConfig);
   const [adminOpen, setAdminOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [form, setForm] = useState(config);
@@ -134,7 +141,7 @@ function App() {
               <iframe
                 width="100%"
                 height="315"
-                src={(lang === 'he' ? config.hebrewYoutubeUrl : config.englishYoutubeUrl).replace('watch?v=', 'embed/')}
+                src={(lang === 'he' ? config.hebrewYoutubeUrl : config.englishYoutubeUrl)}
                 title="YouTube video"
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
